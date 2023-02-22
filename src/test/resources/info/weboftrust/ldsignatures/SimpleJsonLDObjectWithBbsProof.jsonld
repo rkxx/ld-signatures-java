@@ -1,0 +1,19 @@
+{
+  "@context" : [ {
+    "schema" : "http://schema.org/",
+    "givenName" : "schema:givenName",
+    "familyName" : "schema:familyName",
+    "gender" : "schema:gender"
+  }, "https://w3id.org/security/bbs/v1" ],
+  "givenName" : "Marion",
+  "familyName" : "Mustermann",
+  "gender" : "Female",
+  "proof" : {
+    "type" : "BbsBlsSignature2020",
+    "created" : "2023-02-22T17:11:43Z",
+    "proofPurpose" : "assertionMethod",
+    "verificationMethod" : "did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv#zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv",
+    "@context" : "https://w3id.org/security/bbs/v1",
+    "proofValue" : "zTNjJ4GWThksbAw6YLv32otKTr2jwitwsD2J19Lng4vGfA4FDDixTg7uQsGkAC11iPoT7Lbt7yM9SaTDVhYL8iFSJY25NqhxSQixoJDomuMcQpZhx8UrFWJK324UsBk4oxXiPhdq9dqZSMULoaXNPkEoGt"
+  }
+}

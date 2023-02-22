@@ -10,6 +10,7 @@ import info.weboftrust.ldsignatures.util.SHAUtil;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.List;
 
 public abstract class LdVerifier<SIGNATURESUITE extends SignatureSuite> {
 
@@ -54,11 +55,17 @@ public abstract class LdVerifier<SIGNATURESUITE extends SignatureSuite> {
 
         // obtain the canonicalized document
 
-        byte[] canonicalizationResult = this.getCanonicalizer().canonicalize(ldProof, jsonLdObject);
+        List<byte[]> canonicalizationResult = this.getCanonicalizer().canonicalize(ldProof, jsonLdObject);
 
         // verify
 
-        boolean verify = this.verify(canonicalizationResult, ldProof);
+        boolean verify = false;
+
+        if(this instanceof BbsLdVerifier){
+            verify = ((BbsLdVerifier<?>) this).verify(canonicalizationResult, ldProof);
+        }else{
+            verify = this.verify(canonicalizationResult.get(0), ldProof);
+        }
 
         // done
 

@@ -2,6 +2,7 @@ package info.weboftrust.ldsignatures.signer;
 
 import com.apicatalog.jsonld.lang.Keywords;
 import com.danubetech.keyformats.crypto.ByteSigner;
+import com.danubetech.keyformats.crypto.impl.BBSPlus_PrivateKeySigner;
 import foundation.identity.jsonld.JsonLDException;
 import foundation.identity.jsonld.JsonLDObject;
 import foundation.identity.jsonld.JsonLDUtils;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 import java.util.Date;
+import java.util.List;
 
 public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
 
@@ -89,14 +91,19 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
 
         // obtain the canonicalized document
 
-        byte[] canonicalizationResult = this.getCanonicalizer().canonicalize(ldProof, jsonLdObject);
+        List<byte[]> canonicalizationResult = this.getCanonicalizer().canonicalize(ldProof, jsonLdObject);
 
         // sign
 
         LdProof.Builder ldProofBuilder = LdProof.builder()
                 .base(ldProof)
                 .defaultContexts(defaultContexts);
-        this.sign(ldProofBuilder, canonicalizationResult);
+
+        if(this instanceof BbsLdSigner){
+            ((BbsLdSigner<?>)this).sign(ldProofBuilder, canonicalizationResult);
+        }else{
+            this.sign(ldProofBuilder, canonicalizationResult.get(0));
+        }
 
         ldProof = ldProofBuilder.build();
 

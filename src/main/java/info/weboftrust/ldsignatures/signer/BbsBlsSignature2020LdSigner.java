@@ -2,6 +2,7 @@ package info.weboftrust.ldsignatures.signer;
 
 import bbs.signatures.KeyPair;
 import com.danubetech.keyformats.crypto.ByteSigner;
+import com.danubetech.keyformats.crypto.impl.BBSPlus_PrivateKeySigner;
 import com.danubetech.keyformats.crypto.impl.Bls12381G2_BBSPlus_PrivateKeySigner;
 import com.danubetech.keyformats.jose.JWSAlgorithm;
 import info.weboftrust.ldsignatures.LdProof;
@@ -12,10 +13,11 @@ import info.weboftrust.ldsignatures.suites.SignatureSuites;
 import io.ipfs.multibase.Multibase;
 
 import java.security.GeneralSecurityException;
+import java.util.List;
 
-public class BbsBlsSignature2020LdSigner extends LdSigner<BbsBlsSignature2020SignatureSuite> {
+public class BbsBlsSignature2020LdSigner extends BbsLdSigner<BbsBlsSignature2020SignatureSuite> {
 
-    public BbsBlsSignature2020LdSigner(ByteSigner signer) {
+    public BbsBlsSignature2020LdSigner(BBSPlus_PrivateKeySigner signer) {
 
         super(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATURE2020, signer, new URDNA2015Canonicalizer());
     }
@@ -27,16 +29,21 @@ public class BbsBlsSignature2020LdSigner extends LdSigner<BbsBlsSignature2020Sig
 
     public BbsBlsSignature2020LdSigner() {
 
-        this((ByteSigner) null);
+        this((BBSPlus_PrivateKeySigner) null);
     }
 
-    public static void sign(LdProof.Builder ldProofBuilder, byte[] signingInput, ByteSigner signer) throws GeneralSecurityException {
+    public static void sign(LdProof.Builder ldProofBuilder, byte[] signingInput, BBSPlus_PrivateKeySigner signer) throws GeneralSecurityException {
+        sign(ldProofBuilder, List.of(signingInput), signer);
+    }
+
+
+    public static void sign(LdProof.Builder ldProofBuilder, List<byte[]> messages, BBSPlus_PrivateKeySigner signer) throws GeneralSecurityException {
 
         // sign
 
         String proofValue;
 
-        byte[] bytes = signer.sign(signingInput, JWSAlgorithm.BBSPlus);
+        byte[] bytes = signer.sign(messages, JWSAlgorithm.BBSPlus);
         proofValue = Multibase.encode(Multibase.Base.Base58BTC, bytes);
 
         // add JSON-LD context
@@ -51,6 +58,12 @@ public class BbsBlsSignature2020LdSigner extends LdSigner<BbsBlsSignature2020Sig
     @Override
     public void sign(LdProof.Builder ldProofBuilder, byte[] signingInput) throws GeneralSecurityException {
 
-        sign(ldProofBuilder, signingInput, this.getSigner());
+        sign(ldProofBuilder, signingInput, (BBSPlus_PrivateKeySigner) this.getSigner());
+    }
+
+    @Override
+    public void sign(LdProof.Builder ldProofBuilder, List<byte[]> messages) throws GeneralSecurityException {
+
+        sign(ldProofBuilder, messages, (BBSPlus_PrivateKeySigner) this.getSigner());
     }
 }

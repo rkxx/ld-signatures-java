@@ -18,7 +18,7 @@ public class JCSCanonicalizer extends Canonicalizer {
     }
 
     @Override
-    public byte[] canonicalize(LdProof ldProof, JsonLDObject jsonLdObject) throws IOException, GeneralSecurityException, JsonLDException {
+    public List<byte[]> canonicalize(LdProof ldProof, JsonLDObject jsonLdObject) throws IOException, GeneralSecurityException, JsonLDException {
 
         // construct the LD proof without proof values
 
@@ -44,6 +44,6 @@ public class JCSCanonicalizer extends Canonicalizer {
         // construct the canonicalization result
 
         byte[] canonicalizationResult = SHAUtil.sha256(canonicalizedJsonLdObjectWithProofWithoutProofValues);
-        return canonicalizationResult;
+        return List.of(canonicalizationResult);
     }
 }

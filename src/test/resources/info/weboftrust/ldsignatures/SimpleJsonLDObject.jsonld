@@ -1,0 +1,13 @@
+{
+  "@context": [
+    {
+      "schema": "http://schema.org/",
+      "givenName": "schema:givenName",
+      "familyName": "schema:familyName",
+      "gender": "schema:gender"
+    }
+  ],
+  "givenName": "Marion",
+  "familyName": "Mustermann",
+  "gender": "Female"
+}
