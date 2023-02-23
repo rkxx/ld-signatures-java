@@ -7,10 +7,13 @@ import info.weboftrust.ldsignatures.LdProof;
 import info.weboftrust.ldsignatures.canonicalizer.Canonicalizer;
 import info.weboftrust.ldsignatures.suites.SignatureSuite;
 import info.weboftrust.ldsignatures.util.SHAUtil;
+import org.bouncycastle.jcajce.provider.digest.Blake2b;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class LdVerifier<SIGNATURESUITE extends SignatureSuite> {
 
@@ -55,22 +58,33 @@ public abstract class LdVerifier<SIGNATURESUITE extends SignatureSuite> {
 
         // obtain the canonicalized document
 
-        List<byte[]> canonicalizationResult = this.getCanonicalizer().canonicalize(ldProof, jsonLdObject);
+        List<String> canonicalizationResult = this.getCanonicalizer().canonicalize(ldProof, jsonLdObject);
 
         // verify
 
-        boolean verify = false;
-
-        if(this instanceof BbsLdVerifier){
-            verify = ((BbsLdVerifier<?>) this).verify(canonicalizationResult, ldProof);
-        }else{
-            verify = this.verify(canonicalizationResult.get(0), ldProof);
+        if (this instanceof BbsLdVerifier) { // multi message verifier
+            List<byte[]> digestedStatements = canonicalizationResult.stream().map(statement -> {
+                // transforms blank node id's to to proper ones and get bytes
+                byte[] bytes = statement.replaceAll("_:c14n[0-9]*", "<urn:bind:$0>").getBytes();
+                // applies statement digest algorithm
+                // TODO: validate that statement digest algorithm requires Blake2b256, https://w3c-ccg.github.io/ldp-bbs2020/#the-bbs-signature-proof-suite-2020 just defines Blake2b without length
+                Blake2b.Blake2b256 blake = new Blake2b.Blake2b256();
+                return blake.digest(bytes);
+            }).collect(Collectors.toList());
+            return ((BbsLdVerifier<?>) this).verify(digestedStatements, ldProof);
+        } else {
+            // calculates hashes of the normalized documents and concatenates them to one ByteArray
+           ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            canonicalizationResult.forEach(document -> {
+                try {
+                    baos.write(SHAUtil.sha256(document));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            return verify(baos.toByteArray(), ldProof);
         }
-
-        // done
-
-        return verify;
-    }
+   }
 
     public boolean verify(JsonLDObject jsonLdObject) throws IOException, GeneralSecurityException, JsonLDException {
 

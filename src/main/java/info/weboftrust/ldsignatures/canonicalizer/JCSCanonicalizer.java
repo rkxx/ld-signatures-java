@@ -3,7 +3,6 @@ package info.weboftrust.ldsignatures.canonicalizer;
 import foundation.identity.jsonld.JsonLDException;
 import foundation.identity.jsonld.JsonLDObject;
 import info.weboftrust.ldsignatures.LdProof;
-import info.weboftrust.ldsignatures.util.SHAUtil;
 import org.erdtman.jcs.JsonCanonicalizer;
 
 import java.io.IOException;
@@ -18,7 +17,7 @@ public class JCSCanonicalizer extends Canonicalizer {
     }
 
     @Override
-    public List<byte[]> canonicalize(LdProof ldProof, JsonLDObject jsonLdObject) throws IOException, GeneralSecurityException, JsonLDException {
+    public List<String> canonicalize(LdProof ldProof, JsonLDObject jsonLdObject) throws IOException, GeneralSecurityException, JsonLDException {
 
         // construct the LD proof without proof values
 
@@ -37,13 +36,8 @@ public class JCSCanonicalizer extends Canonicalizer {
         LdProof.removeFromJsonLdObject(jsonLdObjectWithProofWithoutProofValues);
         ldProofWithoutProofValues.addToJsonLDObject(jsonLdObjectWithProofWithoutProofValues);
 
-        // canonicalize the LD object
+        // canonicalize the LD object and return result
 
-        String canonicalizedJsonLdObjectWithProofWithoutProofValues = new JsonCanonicalizer(jsonLdObjectWithProofWithoutProofValues.toJson()).getEncodedString();
-
-        // construct the canonicalization result
-
-        byte[] canonicalizationResult = SHAUtil.sha256(canonicalizedJsonLdObjectWithProofWithoutProofValues);
-        return List.of(canonicalizationResult);
+        return List.of(new JsonCanonicalizer(jsonLdObjectWithProofWithoutProofValues.toJson()).getEncodedString());
     }
 }

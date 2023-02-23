@@ -1,12 +1,11 @@
 package info.weboftrust.ldsignatures.verifier;
 
-import bbs.signatures.KeyPair;
 import com.danubetech.keyformats.crypto.ByteVerifier;
 import com.danubetech.keyformats.crypto.impl.BBSPlus_PublicKeyVerifier;
 import com.danubetech.keyformats.crypto.impl.Bls12381G2_BBSPlus_PublicKeyVerifier;
 import com.danubetech.keyformats.jose.JWSAlgorithm;
 import info.weboftrust.ldsignatures.LdProof;
-import info.weboftrust.ldsignatures.canonicalizer.URDNA2015Canonicalizer;
+import info.weboftrust.ldsignatures.canonicalizer.URDNA2015BbsCanonicalizer;
 import info.weboftrust.ldsignatures.suites.BbsBlsSignature2020SignatureSuite;
 import info.weboftrust.ldsignatures.suites.SignatureSuites;
 import io.ipfs.multibase.Multibase;
@@ -18,7 +17,7 @@ public class BbsBlsSignature2020LdVerifier extends BbsLdVerifier<BbsBlsSignature
 
     public BbsBlsSignature2020LdVerifier(ByteVerifier verifier) {
 
-        super(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATURE2020, verifier, new URDNA2015Canonicalizer());
+        super(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATURE2020, verifier, new URDNA2015BbsCanonicalizer());
     }
 
     public BbsBlsSignature2020LdVerifier(byte[] publicKey) {

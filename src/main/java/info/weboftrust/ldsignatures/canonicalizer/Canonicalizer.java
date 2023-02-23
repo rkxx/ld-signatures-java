@@ -13,7 +13,7 @@ public abstract class Canonicalizer {
 
     private List<String> algorithms;
 
-    public abstract List<byte[]> canonicalize(LdProof ldProof, JsonLDObject jsonLdObject) throws IOException, GeneralSecurityException, JsonLDException;
+    public abstract List<String> canonicalize(LdProof ldProof, JsonLDObject jsonLdObject) throws IOException, GeneralSecurityException, JsonLDException;
 
     public Canonicalizer(List<String> algorithms) {
         this.algorithms = algorithms;

@@ -6,6 +6,7 @@ import com.danubetech.keyformats.crypto.impl.BBSPlus_PrivateKeySigner;
 import com.danubetech.keyformats.crypto.impl.Bls12381G2_BBSPlus_PrivateKeySigner;
 import com.danubetech.keyformats.jose.JWSAlgorithm;
 import info.weboftrust.ldsignatures.LdProof;
+import info.weboftrust.ldsignatures.canonicalizer.URDNA2015BbsCanonicalizer;
 import info.weboftrust.ldsignatures.canonicalizer.URDNA2015Canonicalizer;
 import info.weboftrust.ldsignatures.jsonld.LDSecurityContexts;
 import info.weboftrust.ldsignatures.suites.BbsBlsSignature2020SignatureSuite;
@@ -19,7 +20,7 @@ public class BbsBlsSignature2020LdSigner extends BbsLdSigner<BbsBlsSignature2020
 
     public BbsBlsSignature2020LdSigner(BBSPlus_PrivateKeySigner signer) {
 
-        super(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATURE2020, signer, new URDNA2015Canonicalizer());
+        super(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATURE2020, signer, new URDNA2015BbsCanonicalizer());
     }
 
     public BbsBlsSignature2020LdSigner(KeyPair privateKey) {

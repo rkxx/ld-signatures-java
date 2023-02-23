@@ -2,19 +2,22 @@ package info.weboftrust.ldsignatures.signer;
 
 import com.apicatalog.jsonld.lang.Keywords;
 import com.danubetech.keyformats.crypto.ByteSigner;
-import com.danubetech.keyformats.crypto.impl.BBSPlus_PrivateKeySigner;
 import foundation.identity.jsonld.JsonLDException;
 import foundation.identity.jsonld.JsonLDObject;
 import foundation.identity.jsonld.JsonLDUtils;
 import info.weboftrust.ldsignatures.LdProof;
 import info.weboftrust.ldsignatures.canonicalizer.Canonicalizer;
 import info.weboftrust.ldsignatures.suites.SignatureSuite;
+import info.weboftrust.ldsignatures.util.SHAUtil;
+import org.bouncycastle.jcajce.provider.digest.Blake2b;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
 
@@ -53,8 +56,7 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
     }
 
     /**
-     * @deprecated
-     * Use LdSignerRegistry.getLdSignerBySignatureSuiteTerm(signatureSuiteTerm) instead.
+     * @deprecated Use LdSignerRegistry.getLdSignerBySignatureSuiteTerm(signatureSuiteTerm) instead.
      */
     @Deprecated
     public static LdSigner<? extends SignatureSuite> ldSignerForSignatureSuite(String signatureSuiteTerm) {
@@ -62,8 +64,7 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
     }
 
     /**
-     * @deprecated
-     * Use LdSignerRegistry.getLdSignerBySignatureSuite(signatureSuite) instead.
+     * @deprecated Use LdSignerRegistry.getLdSignerBySignatureSuite(signatureSuite) instead.
      */
     @Deprecated
     public static LdSigner<? extends SignatureSuite> ldSignerForSignatureSuite(SignatureSuite signatureSuite) {
@@ -91,7 +92,7 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
 
         // obtain the canonicalized document
 
-        List<byte[]> canonicalizationResult = this.getCanonicalizer().canonicalize(ldProof, jsonLdObject);
+        List<String> canonicalizationResult = this.getCanonicalizer().canonicalize(ldProof, jsonLdObject);
 
         // sign
 
@@ -99,10 +100,27 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
                 .base(ldProof)
                 .defaultContexts(defaultContexts);
 
-        if(this instanceof BbsLdSigner){
-            ((BbsLdSigner<?>)this).sign(ldProofBuilder, canonicalizationResult);
-        }else{
-            this.sign(ldProofBuilder, canonicalizationResult.get(0));
+        if (this instanceof BbsLdSigner) { // multi message signer
+            List<byte[]> digestedStatements = canonicalizationResult.stream().map(statement -> {
+                // transforms blank node id's to to proper ones and get bytes
+                byte[] bytes = statement.replaceAll("_:c14n[0-9]*", "<urn:bind:$0>").getBytes();
+                // applies statement digest algorithm
+                // TODO: validate that statement digest algorithm requires Blake2b256, it just defines Blake2b without length
+                Blake2b.Blake2b256 blake = new Blake2b.Blake2b256();
+                return blake.digest(bytes);
+            }).collect(Collectors.toList());
+            ((BbsLdSigner<?>) this).sign(ldProofBuilder, digestedStatements);
+        } else {
+            // calculates hashes of the normalized documents and concatenates them to one ByteArray
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            canonicalizationResult.forEach(statement -> {
+                try {
+                    baos.write(SHAUtil.sha256(statement));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            this.sign(ldProofBuilder, baos.toByteArray());
         }
 
         ldProof = ldProofBuilder.build();
@@ -117,8 +135,8 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
         return ldProof;
     }
 
-    private void loadMissingContext(JsonLDObject jsonLDObject){
-        if(this.getSignatureSuite().getSupportedJsonLDContexts().stream().noneMatch(jsonLDObject.getContexts()::contains)){
+    private void loadMissingContext(JsonLDObject jsonLDObject) {
+        if (this.getSignatureSuite().getSupportedJsonLDContexts().stream().noneMatch(jsonLDObject.getContexts()::contains)) {
             URI missingJsonLDContext = this.signatureSuite.getDefaultSupportedJsonLDContext();
             if (missingJsonLDContext != null) {
                 JsonLDUtils.jsonLdAddAsJsonArray(jsonLDObject, Keywords.CONTEXT, missingJsonLDContext);

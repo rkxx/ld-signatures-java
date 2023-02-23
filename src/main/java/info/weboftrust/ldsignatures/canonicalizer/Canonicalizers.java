@@ -10,9 +10,12 @@ public class Canonicalizers {
 	public static final JCSCanonicalizer CANONICALIZER_JCSCANONICALIZER = new JCSCanonicalizer();
 	public static final URDNA2015Canonicalizer CANONICALIZER_URDNA2015CANONICALIZER = new URDNA2015Canonicalizer();
 
+	public static final URDNA2015BbsCanonicalizer CANONICALIZER_URDNA2015BbsCANONICALIZER = new URDNA2015BbsCanonicalizer();
+
 	public static List<? extends Canonicalizer> CANONICALIZERS = List.of(
 			CANONICALIZER_JCSCANONICALIZER,
-			CANONICALIZER_URDNA2015CANONICALIZER
+			CANONICALIZER_URDNA2015CANONICALIZER,
+			CANONICALIZER_URDNA2015BbsCANONICALIZER
 	);
 
 	private static final Map<Class<? extends Canonicalizer>, Canonicalizer> CANONICALIZERS_BY_CANONICALIZER_CLASS;
