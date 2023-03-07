@@ -21,6 +21,14 @@ public class URDNA2015BbsCanonicalizer extends Canonicalizer {
     @Override
     public List<String> canonicalize(LdProof ldProof, JsonLDObject jsonLdObject) throws IOException, GeneralSecurityException, JsonLDException {
 
+        // construct the LD proof without proof values
+
+        LdProof ldProofWithoutProofValues = LdProof.builder()
+                .base(ldProof)
+                .defaultContexts(true)
+                .build();
+        LdProof.removeLdProofValues(ldProofWithoutProofValues);
+
         // construct the LD object without proof
 
         JsonLDObject jsonLdObjectWithoutProof = JsonLDObject.builder()
@@ -31,9 +39,13 @@ public class URDNA2015BbsCanonicalizer extends Canonicalizer {
 
         // canonicalize the LD proof and LD object
 
+        String canonicalizedLdProofWithoutProofValues = ldProofWithoutProofValues.normalize("urdna2015");
         String canonicalizedJsonLdObjectWithoutProof = jsonLdObjectWithoutProof.normalize("urdna2015");
 
-        return Arrays.stream(canonicalizedJsonLdObjectWithoutProof.split("\n")).collect(Collectors.toList());
+        // put all statements in one list and return
 
+        List<String> statements = Arrays.stream(canonicalizedLdProofWithoutProofValues.split("\n")).collect(Collectors.toList());
+        statements.addAll(Arrays.stream(canonicalizedJsonLdObjectWithoutProof.split("\n")).collect(Collectors.toList()));
+        return statements;
     }
 }

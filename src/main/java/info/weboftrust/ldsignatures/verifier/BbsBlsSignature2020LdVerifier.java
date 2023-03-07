@@ -8,9 +8,9 @@ import info.weboftrust.ldsignatures.LdProof;
 import info.weboftrust.ldsignatures.canonicalizer.URDNA2015BbsCanonicalizer;
 import info.weboftrust.ldsignatures.suites.BbsBlsSignature2020SignatureSuite;
 import info.weboftrust.ldsignatures.suites.SignatureSuites;
-import io.ipfs.multibase.Multibase;
 
 import java.security.GeneralSecurityException;
+import java.util.Base64;
 import java.util.List;
 
 public class BbsBlsSignature2020LdVerifier extends BbsLdVerifier<BbsBlsSignature2020SignatureSuite> {
@@ -43,7 +43,7 @@ public class BbsBlsSignature2020LdVerifier extends BbsLdVerifier<BbsBlsSignature
 
         boolean verify;
 
-        byte[] bytes = Multibase.decode(proofValue);
+        byte[] bytes = Base64.getDecoder().decode(proofValue);
         verify = verifier.verify(signingInput, bytes, JWSAlgorithm.BBSPlus);
 
         // done

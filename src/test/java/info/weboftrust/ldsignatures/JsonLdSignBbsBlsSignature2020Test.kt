@@ -12,36 +12,40 @@ import info.weboftrust.ldsignatures.verifier.BbsBlsSignature2020LdVerifier
 import io.ipfs.multibase.Base58
 import org.junit.jupiter.api.Test
 import java.net.URI
-import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.random.Random
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-fun ByteArray.toBls12381G2DidKey() : String{
+fun ByteArray.toBls12381G2DidKey(): String {
     require(Bbs.getBls12381G2PublicKeySize() == this.size)
     return "did:key:z${Base58.encode(byteArrayOf(0xeb.toByte(), 0x01) + this)}"
 }
 
-fun String.toBls12381G2PublicKey() : ByteArray{
+fun String.toBls12381G2PublicKey(): ByteArray {
     require(this.lowercase().startsWith("did:key:"))
     require(this.substring(8..10) == "zUC")
     val byteArray = Base58.decode(this.drop(9))
-    require(byteArray.size == Bbs.getBls12381G2PublicKeySize()+2)
-    require(byteArray.copyOfRange(0,2).contentEquals(byteArrayOf(0xeb.toByte(), 0x01)))
+    require(byteArray.size == Bbs.getBls12381G2PublicKeySize() + 2)
+    require(byteArray.copyOfRange(0, 2).contentEquals(byteArrayOf(0xeb.toByte(), 0x01)))
     return byteArray.copyOfRange(2, byteArray.size)
 }
 
 class JsonLdSignBbsBlsSignature2020Test {
 
-    val didKeyIssuer = "did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv"
-    val verkeyIssuer = "tmA6gAFiKH67j6EXv1wFrorCcc4C24ndsYPxJkvDaaB61JfNyUu8FtbAeYCr9gBG55cWbLWemqYexSHWi1PXM5MWZaZgpeFdSucQry8u44q1bHVzJw2FiUgaJYeBE4WPrLc"
+    val didKeyIssuer =
+        "did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv"
+    val verkeyIssuer =
+        "tmA6gAFiKH67j6EXv1wFrorCcc4C24ndsYPxJkvDaaB61JfNyUu8FtbAeYCr9gBG55cWbLWemqYexSHWi1PXM5MWZaZgpeFdSucQry8u44q1bHVzJw2FiUgaJYeBE4WPrLc"
     val keyPairIssuer = KeyPair(
         Hex.decode("9642f47f8f970fe5a36f67d74841cf0885141ccc8eae92685b4dbda5891b42ab132ab0b8c8df8ec11316bdddddbed330179ca7dc7c6dbbd7bf74584831087bb9884d504a76afd4d8f03c14c1e6acccb7bf76b4e2068725456f65fca1bdc184b5"),
         Hex.decode("4b72cad121e0459dce3c5ead7683e82185459a77ac33a9bcd84423c36683acf5")
     )
 
-    val didKeyHolder = "did:key:zUC7CgahEtPMHR2JsTnFSbhjFE6bYAm5i2vbFWRUdSUNc45zFAg3rCA6UVoYcDzU5DHAk1HuLV5tgcd6edL8mKLoDRhbz7qzav5yzkDWWgZMh8wTieyjcXtoTSmxNq96nWUgP5V"
-    val verkeyHolder = "xr2pBCj7voA6TX7QGf1WwvjgHtSsg4NfP7qf9b1ZsAjBqZiR9Xkwg3qsTEeDYujXbnt2J5E5Jj58hkc1c415PUAtBmwtdGxVj6X7cTvVDBobMke8XbihHeMyueQDCxKotUB"
+    val didKeyHolder =
+        "did:key:zUC7CgahEtPMHR2JsTnFSbhjFE6bYAm5i2vbFWRUdSUNc45zFAg3rCA6UVoYcDzU5DHAk1HuLV5tgcd6edL8mKLoDRhbz7qzav5yzkDWWgZMh8wTieyjcXtoTSmxNq96nWUgP5V"
+    val verkeyHolder =
+        "xr2pBCj7voA6TX7QGf1WwvjgHtSsg4NfP7qf9b1ZsAjBqZiR9Xkwg3qsTEeDYujXbnt2J5E5Jj58hkc1c415PUAtBmwtdGxVj6X7cTvVDBobMke8XbihHeMyueQDCxKotUB"
     val keyPairHolder = KeyPair(
         Hex.decode("a21e0d512342b0b6ebf0d86ab3a2cef2a57bab0c0eeff0ffebad724107c9f33d69368531b41b1caa5728730f52aea54817b087f0d773cb1a753f1ede255468e88cea6665c6ce1591c88b079b0c4f77d0967d8211b1bc8687213e2af041ba73c4"),
         Hex.decode("4318a7863ecbf9b347f3bd892828c588c20e61e5fa7344b7268643adb5a2bd4e")
@@ -54,7 +58,7 @@ class JsonLdSignBbsBlsSignature2020Test {
     }
 
     @Test
-    fun testDidExtensions(){
+    fun testDidExtensions() {
         val keyPair = Bbs.generateBls12381G2Key(Random.nextBytes(32))
         val didKey = keyPair.publicKey.toBls12381G2DidKey()
         val publicKey = didKey.toBls12381G2PublicKey()
@@ -78,32 +82,38 @@ class JsonLdSignBbsBlsSignature2020Test {
     }
 
     @Test
-    fun signJsonLDObject(){
+    fun signJsonLDObject() {
         var jsonLDObject = JsonLDObject.fromJson(javaClass.getResource("SimpleJsonLDObject.jsonld")?.readText())
 
         // sign credential (assertion proof)
-        BbsBlsSignature2020LdSigner(keyPairIssuer).apply {
-            created = Date()
+        val ldProof = BbsBlsSignature2020LdSigner(keyPairIssuer).apply {
+            created = Date(1678115674126)
             proofPurpose = LDSecurityKeywords.JSONLD_TERM_ASSERTIONMETHOD
             verificationMethod = URI.create("${didKeyIssuer}#${didKeyIssuer.drop(8)}")
         }.sign(jsonLDObject)
 
+        LdProof.removeLdProofValues(LdProof.getFromJsonLDObject(jsonLDObject))
+
+        val expectedNormalizedDoc = """
+            _:c14n0 <http://purl.org/dc/terms/created> "2023-03-06T15:14:34Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n2 .
+            _:c14n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/security#BbsBlsSignature2020> _:c14n2 .
+            _:c14n0 <https://w3id.org/security#proofPurpose> <https://w3id.org/security#assertionMethod> _:c14n2 .
+            _:c14n0 <https://w3id.org/security#verificationMethod> <did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv#zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv> _:c14n2 .
+            _:c14n1 <http://schema.org/familyName> "Mustermann" .
+            _:c14n1 <http://schema.org/givenName> "Marion" .
+            _:c14n1 <https://w3id.org/security#proof> _:c14n2 .
+
+            """.trimIndent()
         // workaround to clean up credential - JsonLDObject map contains URI()
         // TODO: make sure JsonLDObject map only contains allowed primitives
         jsonLDObject = JsonLDObject.fromJson(jsonLDObject.toJson())
-        val expectedNormalizedDoc = """
-            _:c14n0 <http://schema.org/familyName> "Mustermann" .
-            _:c14n0 <http://schema.org/gender> "Female" .
-            _:c14n0 <http://schema.org/givenName> "Marion" .
-            
-            """.trimIndent()
-        assert(jsonLDObject.normalize(null) == expectedNormalizedDoc)
-        assert(jsonLDObject.toJsonObject().getJsonObject("proof").contains("proofValue"))
+        assertEquals(expectedNormalizedDoc, jsonLDObject.normalize(null))
     }
 
     @Test
     fun verifyJsonLDObject() {
-        val jsonLDObject = JsonLDObject.fromJson(javaClass.getResource("SimpleJsonLDObjectWithBbsProof.jsonld")?.readText())
+        val jsonLDObject =
+            JsonLDObject.fromJson(javaClass.getResource("SimpleJsonLDObjectWithBbsProof.jsonld")?.readText())
         val verificationResult = BbsBlsSignature2020LdVerifier(keyPairIssuer.publicKey).verify(jsonLDObject)
         assertTrue(verificationResult, "unsuccessful verification")
     }
@@ -200,7 +210,8 @@ class JsonLdSignBbsBlsSignature2020Test {
 
     @Test
     fun verifyCredential() {
-        val credentialJsonLdObject = JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialWithBbsProof.jsonld")?.readText())
+        val credentialJsonLdObject =
+            JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialWithBbsProof.jsonld")?.readText())
         val verificationResult = BbsBlsSignature2020LdVerifier(keyPairIssuer.publicKey).verify(credentialJsonLdObject)
         assertTrue(verificationResult, "unsuccessful verification")
     }

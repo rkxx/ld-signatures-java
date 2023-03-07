@@ -9,7 +9,6 @@ import info.weboftrust.ldsignatures.LdProof;
 import info.weboftrust.ldsignatures.canonicalizer.Canonicalizer;
 import info.weboftrust.ldsignatures.suites.SignatureSuite;
 import info.weboftrust.ldsignatures.util.SHAUtil;
-import org.bouncycastle.jcajce.provider.digest.Blake2b;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,6 +17,8 @@ import java.security.GeneralSecurityException;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static info.weboftrust.ldsignatures.jsonld.LDSecurityContexts.JSONLD_CONTEXT_W3ID_SECURITY_V2;
 
 public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
 
@@ -101,15 +102,17 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
                 .defaultContexts(defaultContexts);
 
         if (this instanceof BbsLdSigner) { // multi message signer
-            List<byte[]> digestedStatements = canonicalizationResult.stream().map(statement -> {
-                // transforms blank node id's to to proper ones and get bytes
-                byte[] bytes = statement.replaceAll("_:c14n[0-9]*", "<urn:bind:$0>").getBytes();
-                // applies statement digest algorithm
-                // TODO: validate that statement digest algorithm requires Blake2b256, it just defines Blake2b without length
-                Blake2b.Blake2b256 blake = new Blake2b.Blake2b256();
-                return blake.digest(bytes);
+            List<byte[]> statements = canonicalizationResult.stream().map(statement -> {
+                return statement.getBytes();
+//                // transforms blank node id's to to proper ones and get bytes
+//                byte[] bytes = statement.replaceAll("_:c14n[0-9]*", "<urn:bind:$0>").getBytes();
+//                // applies statement digest algorithm
+//                // TODO: validate that statement digest algorithm requires Blake2b256, it just defines Blake2b without length
+//                Blake2b.Blake2b256 blake = new Blake2b.Blake2b256();
+//                return blake.digest(bytes);
             }).collect(Collectors.toList());
-            ((BbsLdSigner<?>) this).sign(ldProofBuilder, digestedStatements);
+            ((BbsLdSigner<?>) this).sign(ldProofBuilder, statements);
+
         } else {
             // calculates hashes of the normalized documents and concatenates them to one ByteArray
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -127,8 +130,14 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
 
         // add proof to JSON-LD
 
-        if (addToJsonLdObject) ldProof.addToJsonLDObject(jsonLdObject);
-        loadMissingContext(jsonLdObject);
+        if (addToJsonLdObject) {
+            ldProof.addToJsonLDObject(jsonLdObject);
+            List<Object> contexts = JsonLDUtils.jsonLdGetJsonArray(jsonLdObject.getJsonObject(), Keywords.CONTEXT);
+            // TODO: Context security/V2 and credentials/V1 both define proof and cannot be loaded at the same time
+            if (!contexts.contains(JSONLD_CONTEXT_W3ID_SECURITY_V2.toString()) && !contexts.contains("https://www.w3.org/2018/credentials/v1")) {
+                JsonLDUtils.jsonLdAdd(jsonLdObject, Keywords.CONTEXT, JSONLD_CONTEXT_W3ID_SECURITY_V2);
+            }
+        }
 
         // done
 

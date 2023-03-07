@@ -64,12 +64,13 @@ public abstract class LdVerifier<SIGNATURESUITE extends SignatureSuite> {
 
         if (this instanceof BbsLdVerifier) { // multi message verifier
             List<byte[]> digestedStatements = canonicalizationResult.stream().map(statement -> {
-                // transforms blank node id's to to proper ones and get bytes
-                byte[] bytes = statement.replaceAll("_:c14n[0-9]*", "<urn:bind:$0>").getBytes();
-                // applies statement digest algorithm
-                // TODO: validate that statement digest algorithm requires Blake2b256, https://w3c-ccg.github.io/ldp-bbs2020/#the-bbs-signature-proof-suite-2020 just defines Blake2b without length
-                Blake2b.Blake2b256 blake = new Blake2b.Blake2b256();
-                return blake.digest(bytes);
+                return statement.getBytes() ;
+//                // transforms blank node id's to to proper ones and get bytes
+//                byte[] bytes = statement.replaceAll("_:c14n[0-9]*", "<urn:bind:$0>").getBytes();
+//                // applies statement digest algorithm
+//                // TODO: validate that statement digest algorithm requires Blake2b256, https://w3c-ccg.github.io/ldp-bbs2020/#the-bbs-signature-proof-suite-2020 just defines Blake2b without length
+//                Blake2b.Blake2b256 blake = new Blake2b.Blake2b256();
+//                return blake.digest(bytes);
             }).collect(Collectors.toList());
             return ((BbsLdVerifier<?>) this).verify(digestedStatements, ldProof);
         } else {

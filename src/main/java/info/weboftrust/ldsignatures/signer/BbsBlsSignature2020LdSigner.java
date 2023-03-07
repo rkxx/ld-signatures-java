@@ -1,19 +1,17 @@
 package info.weboftrust.ldsignatures.signer;
 
 import bbs.signatures.KeyPair;
-import com.danubetech.keyformats.crypto.ByteSigner;
 import com.danubetech.keyformats.crypto.impl.BBSPlus_PrivateKeySigner;
 import com.danubetech.keyformats.crypto.impl.Bls12381G2_BBSPlus_PrivateKeySigner;
 import com.danubetech.keyformats.jose.JWSAlgorithm;
 import info.weboftrust.ldsignatures.LdProof;
 import info.weboftrust.ldsignatures.canonicalizer.URDNA2015BbsCanonicalizer;
-import info.weboftrust.ldsignatures.canonicalizer.URDNA2015Canonicalizer;
 import info.weboftrust.ldsignatures.jsonld.LDSecurityContexts;
 import info.weboftrust.ldsignatures.suites.BbsBlsSignature2020SignatureSuite;
 import info.weboftrust.ldsignatures.suites.SignatureSuites;
-import io.ipfs.multibase.Multibase;
 
 import java.security.GeneralSecurityException;
+import java.util.Base64;
 import java.util.List;
 
 public class BbsBlsSignature2020LdSigner extends BbsLdSigner<BbsBlsSignature2020SignatureSuite> {
@@ -45,7 +43,7 @@ public class BbsBlsSignature2020LdSigner extends BbsLdSigner<BbsBlsSignature2020
         String proofValue;
 
         byte[] bytes = signer.sign(messages, JWSAlgorithm.BBSPlus);
-        proofValue = Multibase.encode(Multibase.Base.Base58BTC, bytes);
+        proofValue = new String(Base64.getEncoder().encode(bytes));
 
         // add JSON-LD context
 
