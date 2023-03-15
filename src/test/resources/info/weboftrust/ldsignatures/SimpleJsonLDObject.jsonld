@@ -3,10 +3,12 @@
     {
       "schema": "http://schema.org/",
       "givenName": "schema:givenName",
-      "familyName": "schema:familyName"
+      "familyName": "schema:familyName",
+      "gender": "schema:gender"
     },
     "https://w3id.org/security/v2"
   ],
-  "givenName": "Marion",
-  "familyName": "Mustermann"
+  "givenName": "John",
+  "familyName": "Smith",
+  "gender": "Male"
 }

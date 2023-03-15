@@ -95,13 +95,14 @@ class JsonLdSignBbsBlsSignature2020Test {
         LdProof.removeLdProofValues(LdProof.getFromJsonLDObject(jsonLDObject))
 
         val expectedNormalizedDoc = """
-            _:c14n0 <http://purl.org/dc/terms/created> "2023-03-06T15:14:34Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n2 .
-            _:c14n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/security#BbsBlsSignature2020> _:c14n2 .
-            _:c14n0 <https://w3id.org/security#proofPurpose> <https://w3id.org/security#assertionMethod> _:c14n2 .
-            _:c14n0 <https://w3id.org/security#verificationMethod> <did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv#zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv> _:c14n2 .
-            _:c14n1 <http://schema.org/familyName> "Mustermann" .
-            _:c14n1 <http://schema.org/givenName> "Marion" .
-            _:c14n1 <https://w3id.org/security#proof> _:c14n2 .
+                _:c14n0 <http://purl.org/dc/terms/created> "2023-03-06T15:14:34Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n2 .
+                _:c14n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/security#BbsBlsSignature2020> _:c14n2 .
+                _:c14n0 <https://w3id.org/security#proofPurpose> <https://w3id.org/security#assertionMethod> _:c14n2 .
+                _:c14n0 <https://w3id.org/security#verificationMethod> <did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv#zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv> _:c14n2 .
+                _:c14n1 <http://schema.org/familyName> "Smith" .
+                _:c14n1 <http://schema.org/gender> "Male" .
+                _:c14n1 <http://schema.org/givenName> "John" .
+                _:c14n1 <https://w3id.org/security#proof> _:c14n2 .
 
             """.trimIndent()
         // workaround to clean up credential - JsonLDObject map contains URI()

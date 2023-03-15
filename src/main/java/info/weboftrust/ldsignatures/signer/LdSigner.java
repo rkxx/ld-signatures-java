@@ -130,14 +130,8 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
 
         // add proof to JSON-LD
 
-        if (addToJsonLdObject) {
-            ldProof.addToJsonLDObject(jsonLdObject);
-            List<Object> contexts = JsonLDUtils.jsonLdGetJsonArray(jsonLdObject.getJsonObject(), Keywords.CONTEXT);
-            // TODO: Context security/V2 and credentials/V1 both define proof and cannot be loaded at the same time
-            if (!contexts.contains(JSONLD_CONTEXT_W3ID_SECURITY_V2.toString()) && !contexts.contains("https://www.w3.org/2018/credentials/v1")) {
-                JsonLDUtils.jsonLdAdd(jsonLdObject, Keywords.CONTEXT, JSONLD_CONTEXT_W3ID_SECURITY_V2);
-            }
-        }
+        if (addToJsonLdObject) ldProof.addToJsonLDObject(jsonLdObject);
+        loadMissingContext(jsonLdObject);
 
         // done
 
