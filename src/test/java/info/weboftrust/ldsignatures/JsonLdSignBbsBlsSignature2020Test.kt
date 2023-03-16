@@ -92,8 +92,8 @@ class JsonLdSignBbsBlsSignature2020Test {
             verificationMethod = URI.create("${didKeyIssuer}#${didKeyIssuer.drop(8)}")
         }.sign(jsonLDObject)
 
+        // assert correctness of signed document
         LdProof.removeLdProofValues(LdProof.getFromJsonLDObject(jsonLDObject))
-
         val expectedNormalizedDoc = """
                 _:c14n0 <http://purl.org/dc/terms/created> "2023-03-06T15:14:34Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n2 .
                 _:c14n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/security#BbsBlsSignature2020> _:c14n2 .
@@ -105,14 +105,13 @@ class JsonLdSignBbsBlsSignature2020Test {
                 _:c14n1 <https://w3id.org/security#proof> _:c14n2 .
 
             """.trimIndent()
-        // workaround to clean up credential - JsonLDObject map contains URI()
-        // TODO: make sure JsonLDObject map only contains allowed primitives
-        jsonLDObject = JsonLDObject.fromJson(jsonLDObject.toJson())
         assertEquals(expectedNormalizedDoc, jsonLDObject.normalize(null))
+        // IOP test: jsonLDObject was exported to and verified by jsonld-signatures-bbs
     }
 
     @Test
     fun verifyJsonLDObject() {
+        // IOP test: SimpleJsonLDObjectWithBbsProof.jsonld was created by jsonld-signatures-bbs
         val jsonLDObject =
             JsonLDObject.fromJson(javaClass.getResource("SimpleJsonLDObjectWithBbsProof.jsonld")?.readText())
         val verificationResult = BbsBlsSignature2020LdVerifier(keyPairIssuer.publicKey).verify(jsonLDObject)
@@ -166,51 +165,55 @@ class JsonLdSignBbsBlsSignature2020Test {
             .build()
 
         // sign credential (assertion proof)
+        val verificationMethod = "${didKeyIssuer}#${didKeyIssuer.drop(8)}"
         BbsBlsSignature2020LdSigner(keyPairIssuer).apply {
             created = JsonLDUtils.DATE_FORMAT.parse(issuanceDate)
             proofPurpose = LDSecurityKeywords.JSONLD_TERM_ASSERTIONMETHOD
-            verificationMethod = URI.create("${didKeyIssuer}#${didKeyIssuer.drop(8)}")
+            this.verificationMethod = URI.create(verificationMethod)
         }.sign(credentialJsonLdObject)
-        // workaround to clean up credential - JsonLDObject map contains URI()
-        // TODO: make sure JsonLDObject map only contains allowed primitives
-        credentialJsonLdObject = JsonLDObject.fromJson(credentialJsonLdObject.toJson())
 
-        assert(credentialJsonLdObject.toJsonObject().getJsonObject("proof").contains("proofValue"))
-
-        LdProof.removeFromJsonLdObject(credentialJsonLdObject)
+        // assert correctness of signed document
+        LdProof.removeLdProofValues(LdProof.getFromJsonLDObject(credentialJsonLdObject))
         val expectedNormalizedDoc = """
             <did:key:zUC7CgahEtPMHR2JsTnFSbhjFE6bYAm5i2vbFWRUdSUNc45zFAg3rCA6UVoYcDzU5DHAk1HuLV5tgcd6edL8mKLoDRhbz7qzav5yzkDWWgZMh8wTieyjcXtoTSmxNq96nWUgP5V> <http://schema.org/birthDate> "1958-07-17"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
             <did:key:zUC7CgahEtPMHR2JsTnFSbhjFE6bYAm5i2vbFWRUdSUNc45zFAg3rCA6UVoYcDzU5DHAk1HuLV5tgcd6edL8mKLoDRhbz7qzav5yzkDWWgZMh8wTieyjcXtoTSmxNq96nWUgP5V> <http://schema.org/familyName> "SMITH" .
             <did:key:zUC7CgahEtPMHR2JsTnFSbhjFE6bYAm5i2vbFWRUdSUNc45zFAg3rCA6UVoYcDzU5DHAk1HuLV5tgcd6edL8mKLoDRhbz7qzav5yzkDWWgZMh8wTieyjcXtoTSmxNq96nWUgP5V> <http://schema.org/gender> "Male" .
             <did:key:zUC7CgahEtPMHR2JsTnFSbhjFE6bYAm5i2vbFWRUdSUNc45zFAg3rCA6UVoYcDzU5DHAk1HuLV5tgcd6edL8mKLoDRhbz7qzav5yzkDWWgZMh8wTieyjcXtoTSmxNq96nWUgP5V> <http://schema.org/givenName> "JOHN" .
             <did:key:zUC7CgahEtPMHR2JsTnFSbhjFE6bYAm5i2vbFWRUdSUNc45zFAg3rCA6UVoYcDzU5DHAk1HuLV5tgcd6edL8mKLoDRhbz7qzav5yzkDWWgZMh8wTieyjcXtoTSmxNq96nWUgP5V> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccineRecipient> .
-            _:c14n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccinationEvent> .
-            _:c14n0 <https://w3id.org/vaccination#VaccineEventVaccine> _:c14n1 .
-            _:c14n0 <https://w3id.org/vaccination#administeringCentre> "MoH" .
-            _:c14n0 <https://w3id.org/vaccination#batchNumber> "1183738569" .
-            _:c14n0 <https://w3id.org/vaccination#countryOfVaccination> "NZ" .
-            _:c14n0 <https://w3id.org/vaccination#healthProfessional> "MoH" .
-            _:c14n0 <https://w3id.org/vaccination#recipient> <did:key:zUC7CgahEtPMHR2JsTnFSbhjFE6bYAm5i2vbFWRUdSUNc45zFAg3rCA6UVoYcDzU5DHAk1HuLV5tgcd6edL8mKLoDRhbz7qzav5yzkDWWgZMh8wTieyjcXtoTSmxNq96nWUgP5V> .
-            _:c14n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#Vaccine> .
-            _:c14n1 <https://w3id.org/vaccination#atc-code> "J07BX03" .
-            _:c14n1 <https://w3id.org/vaccination#disease> "COVID-19" .
-            _:c14n1 <https://w3id.org/vaccination#marketingAuthorizationHolder> "Moderna Biotech" .
-            _:c14n1 <https://w3id.org/vaccination#medicinalProductName> "COVID-19 Vaccine Moderna" .
+            _:c14n1 <http://purl.org/dc/terms/created> "2028-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n0 .
+            _:c14n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/security#BbsBlsSignature2020> _:c14n0 .
+            _:c14n1 <https://w3id.org/security#proofPurpose> <https://w3id.org/security#assertionMethod> _:c14n0 .
+            _:c14n1 <https://w3id.org/security#verificationMethod> <did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv#zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv> _:c14n0 .
             _:c14n2 <http://schema.org/description> "COVID-19 Vaccination Certificate" .
             _:c14n2 <http://schema.org/name> "COVID-19 Vaccination Certificate" .
             _:c14n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccinationCertificate> .
             _:c14n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> .
-            _:c14n2 <https://www.w3.org/2018/credentials#credentialSubject> _:c14n0 .
+            _:c14n2 <https://w3id.org/security#proof> _:c14n0 .
+            _:c14n2 <https://www.w3.org/2018/credentials#credentialSubject> _:c14n3 .
             _:c14n2 <https://www.w3.org/2018/credentials#expirationDate> "2033-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
             _:c14n2 <https://www.w3.org/2018/credentials#issuanceDate> "2028-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
             _:c14n2 <https://www.w3.org/2018/credentials#issuer> <did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv> .
-            
+            _:c14n3 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccinationEvent> .
+            _:c14n3 <https://w3id.org/vaccination#VaccineEventVaccine> _:c14n4 .
+            _:c14n3 <https://w3id.org/vaccination#administeringCentre> "MoH" .
+            _:c14n3 <https://w3id.org/vaccination#batchNumber> "1183738569" .
+            _:c14n3 <https://w3id.org/vaccination#countryOfVaccination> "NZ" .
+            _:c14n3 <https://w3id.org/vaccination#healthProfessional> "MoH" .
+            _:c14n3 <https://w3id.org/vaccination#recipient> <did:key:zUC7CgahEtPMHR2JsTnFSbhjFE6bYAm5i2vbFWRUdSUNc45zFAg3rCA6UVoYcDzU5DHAk1HuLV5tgcd6edL8mKLoDRhbz7qzav5yzkDWWgZMh8wTieyjcXtoTSmxNq96nWUgP5V> .
+            _:c14n4 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#Vaccine> .
+            _:c14n4 <https://w3id.org/vaccination#atc-code> "J07BX03" .
+            _:c14n4 <https://w3id.org/vaccination#disease> "COVID-19" .
+            _:c14n4 <https://w3id.org/vaccination#marketingAuthorizationHolder> "Moderna Biotech" .
+            _:c14n4 <https://w3id.org/vaccination#medicinalProductName> "COVID-19 Vaccine Moderna" .
+
         """.trimIndent()
-        assert(credentialJsonLdObject.normalize(null) == expectedNormalizedDoc)
+        assertEquals(expectedNormalizedDoc, credentialJsonLdObject.normalize(null))
+        // IOP test: credentialJsonObject was exported to and verified by jsonld-signatures-bbs
     }
 
     @Test
     fun verifyCredential() {
+        // IOP test: VaccinationCredentialWithBbsProof.jsonld was created by jsonld-signatures-bbs
         val credentialJsonLdObject =
             JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialWithBbsProof.jsonld")?.readText())
         val verificationResult = BbsBlsSignature2020LdVerifier(keyPairIssuer.publicKey).verify(credentialJsonLdObject)

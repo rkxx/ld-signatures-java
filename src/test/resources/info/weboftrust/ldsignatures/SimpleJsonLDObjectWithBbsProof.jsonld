@@ -1,20 +1,21 @@
 {
-  "@context": [
-    {
-      "schema": "http://schema.org/",
-      "givenName": "schema:givenName",
-      "familyName": "schema:familyName"
-    },
+  "@context": [    {
+    "schema": "http://schema.org/",
+    "givenName": "schema:givenName",
+    "familyName": "schema:familyName",
+    "gender": "schema:gender"
+  },
     "https://w3id.org/security/v2",
     "https://w3id.org/security/bbs/v1"
   ],
-  "givenName": "Marion",
-  "familyName": "Mustermann",
+  "givenName": "John",
+  "familyName": "Smith",
+  "gender": "Male",
   "proof": {
     "type": "BbsBlsSignature2020",
-    "created": "2023-03-15T13:56:53Z",
+    "created": "2023-03-16T14:15:09Z",
     "proofPurpose": "assertionMethod",
-    "proofValue": "jTEEUxkyga2lJegfxcWrgs5m24j7Pf9G2idDnjI3zDIBCs1T+4/2i4GPTDG4AqJwa9wXh+VeXImveD0czgtk3SLyCWLfGiTgZB8qY/3jT0BdRRb389dPE47ii15HKl3coGVg0OPALTur3aLQzahnyA==",
+    "proofValue": "o0jLfqXy3erwP4y2F/Sv/k/sQqVA0Ssb64XumgFQbk+1PY7E/K+X/AGw7aJx/m3eRBkqVCukx8tUATUCjRWWtx8m6RmDnOBglfBV3mafk3oQwSSVAuQ/c+N2M91ywnpFYvtY0hfJQjJJUDguAh4xUQ==",
     "verificationMethod": "did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv#zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv"
   }
 }
