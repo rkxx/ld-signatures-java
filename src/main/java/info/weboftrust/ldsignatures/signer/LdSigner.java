@@ -1,12 +1,19 @@
 package info.weboftrust.ldsignatures.signer;
 
+import bbs.signatures.ProofMessage;
+import com.apicatalog.jsonld.JsonLd;
+import com.apicatalog.jsonld.JsonLdError;
+import com.apicatalog.jsonld.document.JsonDocument;
+import com.apicatalog.jsonld.http.media.MediaType;
 import com.apicatalog.jsonld.lang.Keywords;
 import com.danubetech.keyformats.crypto.ByteSigner;
+import com.danubetech.keyformats.crypto.provider.RandomProvider;
 import foundation.identity.jsonld.JsonLDException;
 import foundation.identity.jsonld.JsonLDObject;
 import foundation.identity.jsonld.JsonLDUtils;
 import info.weboftrust.ldsignatures.LdProof;
 import info.weboftrust.ldsignatures.canonicalizer.Canonicalizer;
+import info.weboftrust.ldsignatures.suites.BbsBlsSignatureProof2020SignatureSuite;
 import info.weboftrust.ldsignatures.suites.SignatureSuite;
 import info.weboftrust.ldsignatures.util.SHAUtil;
 
@@ -14,11 +21,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static info.weboftrust.ldsignatures.jsonld.LDSecurityContexts.JSONLD_CONTEXT_W3ID_SECURITY_V2;
 
 public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
 
@@ -150,6 +157,82 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
     public LdProof sign(JsonLDObject jsonLdObject) throws IOException, GeneralSecurityException, JsonLDException {
         return this.sign(jsonLdObject, true, false);
     }
+
+    public JsonLDObject deriveProof(JsonLDObject jsonLDObject, JsonLDObject frameJsonLDObject, boolean addToJsonLdObject, boolean defaultContexts) throws IOException, GeneralSecurityException, JsonLDException, JsonLdError {
+        // check of signature suite supports proof derivation
+        if(!(signatureSuite instanceof BbsBlsSignatureProof2020SignatureSuite)){
+            throw new GeneralSecurityException("suite doesn't support derivation of proof: " + signatureSuite.getClass().getName());
+        }
+
+        // get input proof
+        LdProof inputLdProof = LdProof.getFromJsonLDObject(jsonLDObject);
+        // check if input proof is suitable for deriving proof
+        if(!((BbsBlsSignatureProof2020SignatureSuite)signatureSuite).getSupportedJsonLDProofs().contains(inputLdProof.getType())){
+            throw new GeneralSecurityException("derive proof not supported for proof type: " + inputLdProof.getType());
+        }
+
+        // remove ldProof from input document
+        LdProof.removeFromJsonLdObject(jsonLDObject);
+
+        // set nonce if not yet set
+        if(nonce == null) nonce = Base64.getEncoder().encodeToString(RandomProvider.get().randomBytes(32));
+
+        // extract signature from input proof and remove proof value
+        byte[] signature = Base64.getDecoder().decode(inputLdProof.getProofValue());
+        LdProof.removeLdProofValues(inputLdProof);
+
+        // framing
+        JsonDocument document = JsonDocument.of(MediaType.JSON_LD, jsonLDObject.toJsonObject());
+        JsonDocument frameDocument = JsonDocument.of(MediaType.JSON_LD, frameJsonLDObject.toJsonObject());
+        JsonLDObject revealJsonLDObject = JsonLDObject.fromJson(JsonLd.frame(document, frameDocument).get().toString());
+
+        List<String> canonicalDocument = this.getCanonicalizer().canonicalize(inputLdProof, jsonLDObject);
+        List<String> canonicalRevealDocument = this.getCanonicalizer().canonicalize(inputLdProof, revealJsonLDObject);
+
+        // initialize the derived proof builder
+        LdProof.Builder derivedProofBuilder = LdProof.builder()
+                .defaultContexts(false)
+                .defaultTypes(false)
+                .created(inputLdProof.getCreated())
+                .domain(inputLdProof.getDomain())
+                .challenge(inputLdProof.getChallenge())
+                .proofPurpose(inputLdProof.getProofPurpose())
+                .verificationMethod(inputLdProof.getVerificationMethod())
+                .type(this.getSignatureSuite().getTerm())
+                .nonce(this.getNonce());
+
+        List<ProofMessage> messages = new ArrayList<>();
+        int j = 0;
+        for (String s : canonicalDocument) {
+            int type;
+            if (s.equals(canonicalRevealDocument.get(j))) {
+                type = ProofMessage.PROOF_MESSAGE_TYPE_REVEALED;
+                j++;
+            } else {
+                type = ProofMessage.PROOF_MESSAGE_TYPE_HIDDEN_PROOF_SPECIFIC_BLINDING;
+            }
+            messages.add(new ProofMessage(type, s.getBytes(), null));
+        }
+
+        ((BbsLdSigner<?>)this).deriveProof(derivedProofBuilder, signature, messages);
+
+        // build derived proof
+        JsonLDObject result = derivedProofBuilder.build();
+
+        // add proof to reveal document and return reveal document or return derived proof only
+        if (addToJsonLdObject) {
+            result.addToJsonLDObject(revealJsonLDObject);
+            result = revealJsonLDObject;
+        }
+
+        return result;
+    }
+
+    public JsonLDObject deriveProof(JsonLDObject jsonLdObject, JsonLDObject revealDocument) throws IOException, GeneralSecurityException, JsonLDException, JsonLdError {
+        return this.deriveProof(jsonLdObject, revealDocument, true, false);
+    }
+
+
 
     public SignatureSuite getSignatureSuite() {
         return this.signatureSuite;

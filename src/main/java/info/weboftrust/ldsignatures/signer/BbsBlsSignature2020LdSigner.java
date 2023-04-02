@@ -18,7 +18,7 @@ public class BbsBlsSignature2020LdSigner extends BbsLdSigner<BbsBlsSignature2020
 
     public BbsBlsSignature2020LdSigner(BBSPlus_PrivateKeySigner signer) {
 
-        super(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATURE2020, signer, new URDNA2015BbsCanonicalizer());
+        super(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATURE2020, signer, null, new URDNA2015BbsCanonicalizer());
     }
 
     public BbsBlsSignature2020LdSigner(KeyPair privateKey) {
@@ -30,11 +30,6 @@ public class BbsBlsSignature2020LdSigner extends BbsLdSigner<BbsBlsSignature2020
 
         this((BBSPlus_PrivateKeySigner) null);
     }
-
-    public static void sign(LdProof.Builder ldProofBuilder, byte[] signingInput, BBSPlus_PrivateKeySigner signer) throws GeneralSecurityException {
-        sign(ldProofBuilder, List.of(signingInput), signer);
-    }
-
 
     public static void sign(LdProof.Builder ldProofBuilder, List<byte[]> messages, BBSPlus_PrivateKeySigner signer) throws GeneralSecurityException {
 
@@ -52,12 +47,6 @@ public class BbsBlsSignature2020LdSigner extends BbsLdSigner<BbsBlsSignature2020
         // done
 
         ldProofBuilder.proofValue(proofValue);
-    }
-
-    @Override
-    public void sign(LdProof.Builder ldProofBuilder, byte[] signingInput) throws GeneralSecurityException {
-
-        sign(ldProofBuilder, signingInput, (BBSPlus_PrivateKeySigner) this.getSigner());
     }
 
     @Override

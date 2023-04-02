@@ -8,6 +8,7 @@ import foundation.identity.jsonld.JsonLDObject
 import foundation.identity.jsonld.JsonLDUtils
 import info.weboftrust.ldsignatures.jsonld.LDSecurityKeywords
 import info.weboftrust.ldsignatures.signer.BbsBlsSignature2020LdSigner
+import info.weboftrust.ldsignatures.signer.BbsBlsSignatureProof2020LdProofer
 import info.weboftrust.ldsignatures.verifier.BbsBlsSignature2020LdVerifier
 import io.ipfs.multibase.Base58
 import org.junit.jupiter.api.Test
@@ -83,7 +84,7 @@ class JsonLdSignBbsBlsSignature2020Test {
 
     @Test
     fun signJsonLDObject() {
-        var jsonLDObject = JsonLDObject.fromJson(javaClass.getResource("SimpleJsonLDObject.jsonld")?.readText())
+        val jsonLDObject = JsonLDObject.fromJson(javaClass.getResource("SimpleJsonLDObject.jsonld")?.readText())
 
         // sign credential (assertion proof)
         val ldProof = BbsBlsSignature2020LdSigner(keyPairIssuer).apply {
@@ -123,7 +124,7 @@ class JsonLdSignBbsBlsSignature2020Test {
         val issuanceDate = "2028-02-21T09:50:45Z"
         val expirationDate = "2033-02-21T09:50:45Z"
         // create credential
-        var credentialJsonLdObject = JsonLDObject.builder()
+        val credentialJsonLdObject = JsonLDObject.builder()
             .contexts(
                 listOf(
                     URI("https://www.w3.org/2018/credentials/v1"),
@@ -218,5 +219,40 @@ class JsonLdSignBbsBlsSignature2020Test {
             JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialWithBbsProof.jsonld")?.readText())
         val verificationResult = BbsBlsSignature2020LdVerifier(keyPairIssuer.publicKey).verify(credentialJsonLdObject)
         assertTrue(verificationResult, "unsuccessful verification")
+    }
+
+    @Test
+    fun deriveProof() {
+        val nonce = "cJHz2s6IdZyY4j2dCS4Xz88kHrzFsKbw0gcgnIDNwCI="
+        val credentialJsonLdObject =
+            JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialWithBbsProof.jsonld")?.readText())
+        val revealJsonLdObject =
+            JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialRevealDoc.jsonld")?.readText())
+        val revealedJsonLdObject = BbsBlsSignatureProof2020LdProofer(keyPairIssuer.publicKey, Base64.getDecoder().decode(nonce)).deriveProof(credentialJsonLdObject, revealJsonLdObject)
+
+        // assert correctness of signed document
+        LdProof.removeLdProofValues(LdProof.getFromJsonLDObject(revealedJsonLdObject))
+        val expectedNormalizedDoc = """
+                _:c14n0 <http://schema.org/description> "COVID-19 Vaccination Certificate" .
+                _:c14n0 <http://schema.org/name> "COVID-19 Vaccination Certificate" .
+                _:c14n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccinationCertificate> .
+                _:c14n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> .
+                _:c14n0 <https://w3id.org/security#proof> _:c14n3 .
+                _:c14n0 <https://www.w3.org/2018/credentials#credentialSubject> _:c14n1 .
+                _:c14n0 <https://www.w3.org/2018/credentials#expirationDate> "2033-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+                _:c14n0 <https://www.w3.org/2018/credentials#issuanceDate> "2028-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+                _:c14n0 <https://www.w3.org/2018/credentials#issuer> <did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv> .
+                _:c14n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccinationEvent> .
+                _:c14n1 <https://w3id.org/vaccination#administeringCentre> "MoH" .
+                _:c14n1 <https://w3id.org/vaccination#batchNumber> "1183738569" .
+                _:c14n1 <https://w3id.org/vaccination#countryOfVaccination> "NZ" .
+                _:c14n2 <http://purl.org/dc/terms/created> "2023-03-15T14:45:57Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n3 .
+                _:c14n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/security#BbsBlsSignatureProof2020> _:c14n3 .
+                _:c14n2 <https://w3id.org/security#nonce> "$nonce" _:c14n3 .
+                _:c14n2 <https://w3id.org/security#proofPurpose> <https://w3id.org/security#assertionMethod> _:c14n3 .
+                _:c14n2 <https://w3id.org/security#verificationMethod> <did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv#zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv> _:c14n3 .
+
+        """.trimIndent()
+        assertEquals(expectedNormalizedDoc, revealedJsonLdObject.normalize(null))
     }
 }
