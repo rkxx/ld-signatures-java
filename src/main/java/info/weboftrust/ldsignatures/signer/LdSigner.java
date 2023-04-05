@@ -4,6 +4,7 @@ import bbs.signatures.ProofMessage;
 import com.apicatalog.jsonld.JsonLd;
 import com.apicatalog.jsonld.JsonLdError;
 import com.apicatalog.jsonld.document.JsonDocument;
+import com.apicatalog.jsonld.document.RdfDocument;
 import com.apicatalog.jsonld.http.media.MediaType;
 import com.apicatalog.jsonld.lang.Keywords;
 import com.danubetech.keyformats.crypto.ByteSigner;
@@ -17,14 +18,12 @@ import info.weboftrust.ldsignatures.suites.BbsBlsSignatureProof2020SignatureSuit
 import info.weboftrust.ldsignatures.suites.SignatureSuite;
 import info.weboftrust.ldsignatures.util.SHAUtil;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
@@ -109,17 +108,8 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
                 .defaultContexts(defaultContexts);
 
         if (this instanceof BbsLdSigner) { // multi message signer
-            List<byte[]> statements = canonicalizationResult.stream().map(statement -> {
-                return statement.getBytes();
-//                // transforms blank node id's to to proper ones and get bytes
-//                byte[] bytes = statement.replaceAll("_:c14n[0-9]*", "<urn:bind:$0>").getBytes();
-//                // applies statement digest algorithm
-//                // TODO: validate that statement digest algorithm requires Blake2b256, it just defines Blake2b without length
-//                Blake2b.Blake2b256 blake = new Blake2b.Blake2b256();
-//                return blake.digest(bytes);
-            }).collect(Collectors.toList());
+            List<byte[]> statements = canonicalizationResult.stream().map(String::getBytes).collect(Collectors.toList());
             ((BbsLdSigner<?>) this).sign(ldProofBuilder, statements);
-
         } else {
             // calculates hashes of the normalized documents and concatenates them to one ByteArray
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -182,12 +172,38 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
         LdProof.removeLdProofValues(inputLdProof);
 
         // framing
-        JsonDocument document = JsonDocument.of(MediaType.JSON_LD, jsonLDObject.toJsonObject());
+        //get frame document
         JsonDocument frameDocument = JsonDocument.of(MediaType.JSON_LD, frameJsonLDObject.toJsonObject());
-        JsonLDObject revealJsonLDObject = JsonLDObject.fromJson(JsonLd.frame(document, frameDocument).get().toString());
 
+        //prepare input document
+        // normalize
+        String normalized = jsonLDObject.normalize(null);
+        // transforms blank node id's to proper ones
+        String transformedStatements = Arrays.stream(normalized.split("\n")).map(statement -> statement.replaceAll("_:c14n[0-9]*", "<urn:bnid:$0>")).collect(Collectors.joining("\n"));
+        // convert back to jsonld
+        JsonDocument expandedInputDocument = JsonDocument.of(JsonLd.fromRdf(RdfDocument.of(new ByteArrayInputStream(transformedStatements.getBytes()))).get());
+        // frame input document and convert back to JsonLDObject
+        JsonLDObject framedJsonLDObject = JsonLDObject.fromJson(JsonLd.frame(expandedInputDocument, frameDocument).get().toString());
+
+        // canonicalize input jsonLdObject and framed input jsonLdObject
         List<String> canonicalDocument = this.getCanonicalizer().canonicalize(inputLdProof, jsonLDObject);
-        List<String> canonicalRevealDocument = this.getCanonicalizer().canonicalize(inputLdProof, revealJsonLDObject);
+        List<String> canonicalFramedDocument = this.getCanonicalizer().canonicalize(inputLdProof, framedJsonLDObject);
+        // transforms proper blank nodes back to simple id's in order to match format of input jsonLdObject
+        canonicalFramedDocument = canonicalFramedDocument.stream().map(statement -> statement.replaceAll("<urn:bnid:(_:c14n[0-9]*)>", "$1")).collect(Collectors.toList());
+
+        // calculate list of ProofMessages by comparing input and framed jsonLdObject line by line
+        List<ProofMessage> messages = new ArrayList<>();
+        int j = 0;
+        for (String s : canonicalDocument) {
+            int type;
+            if (s.equals(canonicalFramedDocument.get(j))) {
+                type = ProofMessage.PROOF_MESSAGE_TYPE_REVEALED;
+                j++;
+            } else {
+                type = ProofMessage.PROOF_MESSAGE_TYPE_HIDDEN_PROOF_SPECIFIC_BLINDING;
+            }
+            messages.add(new ProofMessage(type, s.getBytes(), null));
+        }
 
         // initialize the derived proof builder
         LdProof.Builder derivedProofBuilder = LdProof.builder()
@@ -201,35 +217,23 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
                 .type(this.getSignatureSuite().getTerm())
                 .nonce(this.getNonce());
 
-        List<ProofMessage> messages = new ArrayList<>();
-        int j = 0;
-        for (String s : canonicalDocument) {
-            int type;
-            if (s.equals(canonicalRevealDocument.get(j))) {
-                type = ProofMessage.PROOF_MESSAGE_TYPE_REVEALED;
-                j++;
-            } else {
-                type = ProofMessage.PROOF_MESSAGE_TYPE_HIDDEN_PROOF_SPECIFIC_BLINDING;
-            }
-            messages.add(new ProofMessage(type, s.getBytes(), null));
-        }
-
+        // calculate proof value and add to derived proof
         ((BbsLdSigner<?>)this).deriveProof(derivedProofBuilder, signature, messages);
 
         // build derived proof
         JsonLDObject result = derivedProofBuilder.build();
 
-        // add proof to reveal document and return reveal document or return derived proof only
+        // add proof to framed document and reveal resulting document or return derived proof only
         if (addToJsonLdObject) {
-            result.addToJsonLDObject(revealJsonLDObject);
-            result = revealJsonLDObject;
+            result.addToJsonLDObject(framedJsonLDObject);
+            result = framedJsonLDObject;
         }
 
         return result;
     }
 
-    public JsonLDObject deriveProof(JsonLDObject jsonLdObject, JsonLDObject revealDocument) throws IOException, GeneralSecurityException, JsonLDException, JsonLdError {
-        return this.deriveProof(jsonLdObject, revealDocument, true, false);
+    public JsonLDObject deriveProof(JsonLDObject jsonLdObject, JsonLDObject frameJsonLdObject) throws IOException, GeneralSecurityException, JsonLDException, JsonLdError {
+        return this.deriveProof(jsonLdObject, frameJsonLdObject, true, false);
     }
 
 

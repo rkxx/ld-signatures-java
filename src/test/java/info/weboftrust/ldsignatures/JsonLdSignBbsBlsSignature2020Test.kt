@@ -222,37 +222,98 @@ class JsonLdSignBbsBlsSignature2020Test {
     }
 
     @Test
-    fun deriveProof() {
-        val nonce = "cJHz2s6IdZyY4j2dCS4Xz88kHrzFsKbw0gcgnIDNwCI="
+    fun createPresentation() {
+
+        val issuanceDate = "2028-02-21T09:50:45Z"
+        val expirationDate = "2033-02-21T09:50:45Z"
+
+        // take existing credential, frame it and derive proof
+        val nonce = "/du/xAnXQvMFg/WV7ggvWBaWWbmJhFhc+VFh7K1W+0NwwoA9co6NoOBfjGYz9cFkL24="
+        val challenge = "challenge"
+
         val credentialJsonLdObject =
             JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialWithBbsProof.jsonld")?.readText())
-        val revealJsonLdObject =
-            JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialRevealDoc.jsonld")?.readText())
-        val revealedJsonLdObject = BbsBlsSignatureProof2020LdProofer(keyPairIssuer.publicKey, Base64.getDecoder().decode(nonce)).deriveProof(credentialJsonLdObject, revealJsonLdObject)
+        val frameJsonLdObject =
+            JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialFrameDoc.jsonld")?.readText())
+        val framedJsonLdObject =
+            BbsBlsSignatureProof2020LdProofer(keyPairIssuer.publicKey, Base64.getDecoder().decode(nonce)).deriveProof(
+                credentialJsonLdObject,
+                frameJsonLdObject
+            )
 
-        // assert correctness of signed document
-        LdProof.removeLdProofValues(LdProof.getFromJsonLDObject(revealedJsonLdObject))
+        val presentation = JsonLDObject.builder()
+            .contexts(
+                listOf(
+                    URI("https://www.w3.org/2018/credentials/v1"),
+                    URI("https://identity.foundation/presentation-exchange/submission/v1"),
+                )
+            )
+            .types(listOf("VerifiablePresentation", "PresentationSubmission"))
+            .properties(
+                mapOf(
+                    "presentation_submission" to mapOf(
+                        "definition_id" to "32f54163-7166-48f1-93d8-ff217bdb0653",
+                        "descriptor_map" to listOf(
+                            mapOf(
+                                "format" to "ldp_vc",
+                                "path" to "$.verifiableCredential[0]"
+                            )
+                        ),
+                    ),
+                    "verifiableCredential" to listOf(
+                        framedJsonLdObject.toMap()
+                    )
+                )
+            )
+            .build()
+
+        // sign presentation (authentication proof)
+        val verificationMethod = "${didKeyHolder}#${didKeyHolder.drop(8)}"
+        BbsBlsSignature2020LdSigner(keyPairHolder).apply {
+            created = JsonLDUtils.DATE_FORMAT.parse(issuanceDate)
+            proofPurpose = LDSecurityKeywords.JSONLD_TERM_AUTHENTICATION
+            this.challenge = challenge
+            this.verificationMethod = URI.create(verificationMethod)
+        }.sign(presentation)
+
+        // assert correctness of presentation
+        LdProof.removeLdProofValues(LdProof.getFromJsonLDObject(presentation))
+        val assertionProof = LdProof.fromJsonObject(((presentation.jsonObject.get("verifiableCredential") as List<*>).get(0) as Map<*,*>).get("proof") as Map<String, Object>)
+        LdProof.removeLdProofValues(assertionProof)
         val expectedNormalizedDoc = """
-                _:c14n0 <http://schema.org/description> "COVID-19 Vaccination Certificate" .
-                _:c14n0 <http://schema.org/name> "COVID-19 Vaccination Certificate" .
-                _:c14n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccinationCertificate> .
-                _:c14n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> .
-                _:c14n0 <https://w3id.org/security#proof> _:c14n3 .
-                _:c14n0 <https://www.w3.org/2018/credentials#credentialSubject> _:c14n1 .
-                _:c14n0 <https://www.w3.org/2018/credentials#expirationDate> "2033-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-                _:c14n0 <https://www.w3.org/2018/credentials#issuanceDate> "2028-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-                _:c14n0 <https://www.w3.org/2018/credentials#issuer> <did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv> .
-                _:c14n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccinationEvent> .
-                _:c14n1 <https://w3id.org/vaccination#administeringCentre> "MoH" .
-                _:c14n1 <https://w3id.org/vaccination#batchNumber> "1183738569" .
-                _:c14n1 <https://w3id.org/vaccination#countryOfVaccination> "NZ" .
-                _:c14n2 <http://purl.org/dc/terms/created> "2023-03-15T14:45:57Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n3 .
-                _:c14n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/security#BbsBlsSignatureProof2020> _:c14n3 .
-                _:c14n2 <https://w3id.org/security#nonce> "$nonce" _:c14n3 .
-                _:c14n2 <https://w3id.org/security#proofPurpose> <https://w3id.org/security#assertionMethod> _:c14n3 .
-                _:c14n2 <https://w3id.org/security#verificationMethod> <did:key:zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv#zUC78bhyjquwftxL92uP5xdUA7D7rtNQ43LZjvymncP2KTXtQud1g9JH4LYqoXZ6fyiuDJ2PdkNU9j6cuK1dsGjFB2tEMvTnnHP7iZJomBmmY1xsxBqbPsCMtH6YmjP4ocfGLwv> _:c14n3 .
+                <$didKeyHolder> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccineRecipient> _:c14n3 .
+                <urn:bnid:_:c14n0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccinationEvent> _:c14n3 .
+                <urn:bnid:_:c14n0> <https://w3id.org/vaccination#administeringCentre> "MoH" _:c14n3 .
+                <urn:bnid:_:c14n0> <https://w3id.org/vaccination#batchNumber> "1183738569" _:c14n3 .
+                <urn:bnid:_:c14n0> <https://w3id.org/vaccination#countryOfVaccination> "NZ" _:c14n3 .
+                <urn:bnid:_:c14n0> <https://w3id.org/vaccination#recipient> <$didKeyHolder> _:c14n3 .
+                <urn:bnid:_:c14n2> <http://schema.org/description> "COVID-19 Vaccination Certificate" _:c14n3 .
+                <urn:bnid:_:c14n2> <http://schema.org/name> "COVID-19 Vaccination Certificate" _:c14n3 .
+                <urn:bnid:_:c14n2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/vaccination#VaccinationCertificate> _:c14n3 .
+                <urn:bnid:_:c14n2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> _:c14n3 .
+                <urn:bnid:_:c14n2> <https://w3id.org/security#proof> _:c14n5 _:c14n3 .
+                <urn:bnid:_:c14n2> <https://www.w3.org/2018/credentials#credentialSubject> <urn:bnid:_:c14n0> _:c14n3 .
+                <urn:bnid:_:c14n2> <https://www.w3.org/2018/credentials#expirationDate> "2033-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n3 .
+                <urn:bnid:_:c14n2> <https://www.w3.org/2018/credentials#issuanceDate> "2028-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n3 .
+                <urn:bnid:_:c14n2> <https://www.w3.org/2018/credentials#issuer> <$didKeyIssuer> _:c14n3 .
+                _:c14n1 <http://purl.org/dc/terms/created> "2023-03-15T14:45:57Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n5 .
+                _:c14n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/security#BbsBlsSignatureProof2020> _:c14n5 .
+                _:c14n1 <https://w3id.org/security#nonce> "/du/xAnXQvMFg/WV7ggvWBaWWbmJhFhc+VFh7K1W+0NwwoA9co6NoOBfjGYz9cFkL24=" _:c14n5 .
+                _:c14n1 <https://w3id.org/security#proofPurpose> <https://w3id.org/security#assertionMethod> _:c14n5 .
+                _:c14n1 <https://w3id.org/security#verificationMethod> <$didKeyIssuer#${didKeyIssuer.substring(8)}> _:c14n5 .
+                _:c14n2 <http://purl.org/dc/terms/created> "2028-02-21T09:50:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> _:c14n0 .
+                _:c14n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/security#BbsBlsSignature2020> _:c14n0 .
+                _:c14n2 <https://w3id.org/security#challenge> "challenge" _:c14n0 .
+                _:c14n2 <https://w3id.org/security#proofPurpose> <https://w3id.org/security#authenticationMethod> _:c14n0 .
+                _:c14n2 <https://w3id.org/security#verificationMethod> <$didKeyHolder#${didKeyHolder.substring(8)}> _:c14n0 .
+                _:c14n4 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://identity.foundation/presentation-exchange/#presentation-submission> .
+                _:c14n4 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiablePresentation> .
+                _:c14n4 <https://identity.foundation/presentation-exchange/#presentation-submission> "{\"definition_id\":\"32f54163-7166-48f1-93d8-ff217bdb0653\",\"descriptor_map\":[{\"format\":\"ldp_vc\",\"path\":\"${'$'}.verifiableCredential[0]\"}]}"^^<http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON> .
+                _:c14n4 <https://w3id.org/security#proof> _:c14n0 .
+                _:c14n4 <https://www.w3.org/2018/credentials#verifiableCredential> _:c14n3 .
 
         """.trimIndent()
-        assertEquals(expectedNormalizedDoc, revealedJsonLdObject.normalize(null))
+
+        assertEquals(expectedNormalizedDoc, presentation.normalize(null))
     }
 }
