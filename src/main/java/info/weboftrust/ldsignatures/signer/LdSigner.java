@@ -150,14 +150,14 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
 
     public JsonLDObject deriveProof(JsonLDObject jsonLDObject, JsonLDObject frameJsonLDObject, boolean addToJsonLdObject, boolean defaultContexts) throws IOException, GeneralSecurityException, JsonLDException, JsonLdError {
         // check of signature suite supports proof derivation
-        if(!(signatureSuite instanceof BbsBlsSignatureProof2020SignatureSuite)){
+        if (!(signatureSuite instanceof BbsBlsSignatureProof2020SignatureSuite)) {
             throw new GeneralSecurityException("suite doesn't support derivation of proof: " + signatureSuite.getClass().getName());
         }
 
         // get input proof
         LdProof inputLdProof = LdProof.getFromJsonLDObject(jsonLDObject);
         // check if input proof is suitable for deriving proof
-        if(!((BbsBlsSignatureProof2020SignatureSuite)signatureSuite).getSupportedJsonLDProofs().contains(inputLdProof.getType())){
+        if (!((BbsBlsSignatureProof2020SignatureSuite) signatureSuite).getSupportedJsonLDProofs().contains(inputLdProof.getType())) {
             throw new GeneralSecurityException("derive proof not supported for proof type: " + inputLdProof.getType());
         }
 
@@ -165,7 +165,7 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
         LdProof.removeFromJsonLdObject(jsonLDObject);
 
         // set nonce if not yet set
-        if(nonce == null) nonce = Base64.getEncoder().encodeToString(RandomProvider.get().randomBytes(32));
+        if (nonce == null) nonce = Base64.getEncoder().encodeToString(RandomProvider.get().randomBytes(32));
 
         // extract signature from input proof and remove proof value
         byte[] signature = Base64.getDecoder().decode(inputLdProof.getProofValue());
@@ -178,7 +178,7 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
         //prepare input document
         // normalize
         String normalized = jsonLDObject.normalize(null);
-        // transforms blank node id's to proper ones
+        // transforms internal blank node identifiers to uniform black node identifiers (urn:bnid)
         String transformedStatements = Arrays.stream(normalized.split("\n")).map(statement -> statement.replaceAll("_:c14n[0-9]*", "<urn:bnid:$0>")).collect(Collectors.joining("\n"));
         // convert back to jsonld
         JsonDocument expandedInputDocument = JsonDocument.of(JsonLd.fromRdf(RdfDocument.of(new ByteArrayInputStream(transformedStatements.getBytes()))).get());
@@ -188,7 +188,7 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
         // canonicalize input jsonLdObject and framed input jsonLdObject
         List<String> canonicalDocument = this.getCanonicalizer().canonicalize(inputLdProof, jsonLDObject);
         List<String> canonicalFramedDocument = this.getCanonicalizer().canonicalize(inputLdProof, framedJsonLDObject);
-        // transforms proper blank nodes back to simple id's in order to match format of input jsonLdObject
+        // transforms uniform nodes back to internal blank node identifiers
         canonicalFramedDocument = canonicalFramedDocument.stream().map(statement -> statement.replaceAll("<urn:bnid:(_:c14n[0-9]*)>", "$1")).collect(Collectors.toList());
 
         // calculate list of ProofMessages by comparing input and framed jsonLdObject line by line
@@ -218,7 +218,7 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
                 .nonce(this.getNonce());
 
         // calculate proof value and add to derived proof
-        ((BbsLdSigner<?>)this).deriveProof(derivedProofBuilder, signature, messages);
+        ((BbsLdSigner<?>) this).deriveProof(derivedProofBuilder, signature, messages);
 
         // build derived proof
         JsonLDObject result = derivedProofBuilder.build();
@@ -235,7 +235,6 @@ public abstract class LdSigner<SIGNATURESUITE extends SignatureSuite> {
     public JsonLDObject deriveProof(JsonLDObject jsonLdObject, JsonLDObject frameJsonLdObject) throws IOException, GeneralSecurityException, JsonLDException, JsonLdError {
         return this.deriveProof(jsonLdObject, frameJsonLdObject, true, false);
     }
-
 
 
     public SignatureSuite getSignatureSuite() {

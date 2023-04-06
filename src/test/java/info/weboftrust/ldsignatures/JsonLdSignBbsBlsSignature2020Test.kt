@@ -10,6 +10,7 @@ import info.weboftrust.ldsignatures.jsonld.LDSecurityKeywords
 import info.weboftrust.ldsignatures.signer.BbsBlsSignature2020LdSigner
 import info.weboftrust.ldsignatures.signer.BbsBlsSignatureProof2020LdProofer
 import info.weboftrust.ldsignatures.verifier.BbsBlsSignature2020LdVerifier
+import info.weboftrust.ldsignatures.verifier.BbsBlsSignatureProof2020LdVerifier
 import io.ipfs.multibase.Base58
 import org.junit.jupiter.api.Test
 import java.net.URI
@@ -223,7 +224,6 @@ class JsonLdSignBbsBlsSignature2020Test {
 
     @Test
     fun createPresentation() {
-
         val issuanceDate = "2028-02-21T09:50:45Z"
         val expirationDate = "2033-02-21T09:50:45Z"
 
@@ -315,5 +315,21 @@ class JsonLdSignBbsBlsSignature2020Test {
         """.trimIndent()
 
         assertEquals(expectedNormalizedDoc, presentation.normalize(null))
+    }
+
+    @Test
+    fun verifyPresentation() {
+        val presentationJsonLdObject =
+            JsonLDObject.fromJson(javaClass.getResource("VaccinationPresentation.jsonld")?.readText())
+        val credential =
+            presentationJsonLdObject.toJsonObject().getJsonArray("verifiableCredential").get(0).asJsonObject()
+        var verificationResult = BbsBlsSignatureProof2020LdVerifier(keyPairIssuer.publicKey).apply {
+            proofPurpose = LDSecurityKeywords.JSONLD_TERM_ASSERTIONMETHOD
+        }.verifyProof(JsonLDObject.fromJson(credential.toString()))
+        assertTrue(verificationResult, "unsuccessful assertion proof verification")
+        verificationResult = BbsBlsSignature2020LdVerifier(keyPairHolder.publicKey).apply {
+            proofPurpose = LDSecurityKeywords.JSONLD_TERM_AUTHENTICATION
+        }.verify(presentationJsonLdObject)
+        assertTrue(verificationResult, "unsuccessful authentication (holder binding)")
     }
 }

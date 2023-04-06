@@ -2,6 +2,7 @@ package info.weboftrust.ldsignatures.signer;
 
 import bbs.signatures.ProofMessage;
 import com.danubetech.keyformats.crypto.Proofer;
+import com.danubetech.keyformats.crypto.impl.BBSPlus_PrivateKeySigner;
 import com.danubetech.keyformats.crypto.impl.BBSPlus_Proofer;
 import com.danubetech.keyformats.crypto.impl.Bls12381G2_BBSPlus_Proofer;
 import com.danubetech.keyformats.jose.JWSAlgorithm;
@@ -10,6 +11,7 @@ import info.weboftrust.ldsignatures.canonicalizer.URDNA2015BbsCanonicalizer;
 import info.weboftrust.ldsignatures.jsonld.LDSecurityContexts;
 import info.weboftrust.ldsignatures.suites.BbsBlsSignatureProof2020SignatureSuite;
 import info.weboftrust.ldsignatures.suites.SignatureSuites;
+import org.apache.commons.codec.binary.Hex;
 
 import java.security.GeneralSecurityException;
 import java.util.Base64;
@@ -23,6 +25,10 @@ public class BbsBlsSignatureProof2020LdProofer extends BbsLdSigner<BbsBlsSignatu
 
     public BbsBlsSignatureProof2020LdProofer(byte[] publicKey, byte[] nonce) {
         this(new Bls12381G2_BBSPlus_Proofer(publicKey, nonce));
+    }
+
+    public BbsBlsSignatureProof2020LdProofer() {
+        this(null);
     }
 
     public static void deriveProof(LdProof.Builder ldProofBuilder, byte[] signature, List<ProofMessage> messages, Proofer proofer) throws GeneralSecurityException {

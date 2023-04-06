@@ -17,7 +17,7 @@ public class BbsBlsSignature2020LdVerifier extends BbsLdVerifier<BbsBlsSignature
 
     public BbsBlsSignature2020LdVerifier(ByteVerifier verifier) {
 
-        super(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATURE2020, verifier, new URDNA2015BbsCanonicalizer());
+        super(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATURE2020, verifier, null, new URDNA2015BbsCanonicalizer());
     }
 
     public BbsBlsSignature2020LdVerifier(byte[] publicKey) {

@@ -1,5 +1,6 @@
 package info.weboftrust.ldsignatures;
 
+import info.weboftrust.ldsignatures.signer.LdSignerRegistry;
 import info.weboftrust.ldsignatures.suites.SignatureSuite;
 import info.weboftrust.ldsignatures.suites.SignatureSuites;
 import info.weboftrust.ldsignatures.verifier.LdVerifierRegistry;
@@ -11,6 +12,8 @@ public class LdVerifierRegistryTest {
 
 	@Test
 	public void testLdVerifierRegistry() throws Exception {
+
+		LdVerifierRegistry.getLdVerifierBySignatureSuite(SignatureSuites.SIGNATURE_SUITE_BBSBLSSIGNATUREPROOF2020);
 
 		for (SignatureSuite signatureSuite : SignatureSuites.SIGNATURE_SUITES) {
 			assertEquals(LdVerifierRegistry.getLdVerifierBySignatureSuite(signatureSuite).getSignatureSuite(), signatureSuite);

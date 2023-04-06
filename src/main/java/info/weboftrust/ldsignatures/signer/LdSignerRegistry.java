@@ -1,5 +1,6 @@
 package info.weboftrust.ldsignatures.signer;
 
+import info.weboftrust.ldsignatures.suites.BbsBlsSignatureProof2020SignatureSuite;
 import info.weboftrust.ldsignatures.suites.SignatureSuite;
 import info.weboftrust.ldsignatures.suites.SignatureSuites;
 
@@ -20,6 +21,7 @@ public class LdSignerRegistry {
             EcdsaKoblitzSignature2016LdSigner.class,
             JcsEcdsaSecp256k1Signature2019LdSigner.class,
             BbsBlsSignature2020LdSigner.class,
+            BbsBlsSignatureProof2020LdProofer.class,
             JsonWebSignature2020LdSigner.class
     );
 

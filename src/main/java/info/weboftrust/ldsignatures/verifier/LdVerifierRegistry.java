@@ -20,6 +20,7 @@ public class LdVerifierRegistry {
             EcdsaKoblitzSignature2016LdVerifier.class,
             JcsEcdsaSecp256k1Signature2019LdVerifier.class,
             BbsBlsSignature2020LdVerifier.class,
+            BbsBlsSignatureProof2020LdVerifier.class,
             JsonWebSignature2020LdVerifier.class
     );
 

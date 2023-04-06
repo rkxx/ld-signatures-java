@@ -17,8 +17,8 @@ public class SignatureSuitesTest {
 		assertEquals(SignatureSuites.findSignatureSuitesByKeyTypeName(KeyTypeName.Ed25519).size(), 4);
 		assertEquals(SignatureSuites.findSignatureSuitesByKeyTypeName(KeyTypeName.P_256).size(), 1);
 		assertEquals(SignatureSuites.findSignatureSuitesByKeyTypeName(KeyTypeName.P_384).size(), 1);
-		assertEquals(SignatureSuites.findSignatureSuitesByKeyTypeName(KeyTypeName.Bls12381G1).size(), 1);
-		assertEquals(SignatureSuites.findSignatureSuitesByKeyTypeName(KeyTypeName.Bls12381G2).size(), 1);
+		assertEquals(SignatureSuites.findSignatureSuitesByKeyTypeName(KeyTypeName.Bls12381G1).size(), 2);
+		assertEquals(SignatureSuites.findSignatureSuitesByKeyTypeName(KeyTypeName.Bls12381G2).size(), 2);
 
 		assertTrue(SignatureSuites.findSignatureSuitesByKeyTypeName(KeyTypeName.RSA).contains(SignatureSuites.SIGNATURE_SUITE_RSASIGNATURE2018));
 		assertTrue(SignatureSuites.findSignatureSuitesByKeyTypeName(KeyTypeName.secp256k1).contains(SignatureSuites.SIGNATURE_SUITE_ECDSAKOBLITZSIGNATURE2016));
