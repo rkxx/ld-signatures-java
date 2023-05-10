@@ -231,14 +231,14 @@ class JsonLdSignBbsBlsSignature2020Test {
         val nonce = "/du/xAnXQvMFg/WV7ggvWBaWWbmJhFhc+VFh7K1W+0NwwoA9co6NoOBfjGYz9cFkL24="
         val challenge = "challenge"
 
-        val credentialJsonLdObject =
+        val credential =
             JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialWithBbsProof.jsonld")?.readText())
-        val frameJsonLdObject =
+        val frame =
             JsonLDObject.fromJson(javaClass.getResource("VaccinationCredentialFrameDoc.jsonld")?.readText())
-        val framedJsonLdObject =
+        val derivedCredential =
             BbsBlsSignatureProof2020LdProofer(keyPairIssuer.publicKey, Base64.getDecoder().decode(nonce)).deriveProof(
-                credentialJsonLdObject,
-                frameJsonLdObject
+                credential,
+                frame
             )
 
         val presentation = JsonLDObject.builder()
@@ -261,7 +261,7 @@ class JsonLdSignBbsBlsSignature2020Test {
                         ),
                     ),
                     "verifiableCredential" to listOf(
-                        framedJsonLdObject.toMap()
+                        derivedCredential.toMap()
                     )
                 )
             )
